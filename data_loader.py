@@ -4,6 +4,20 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 
 
+def load_dataset(data_root, dataset_name, trans):
+    if dataset_name == 'kmnist':
+        return datasets.KMNIST(
+            root=data_root,
+            train=True,
+            transform=trans,
+            download=True)
+    else:
+        return datasets.ImageFolder(
+            root=os.path.join(data_root, dataset_name),
+            transform=trans
+        )
+
+
 class DataLoader(object):
     def __init__(self, data_root, dataset_name, img_size, img_type, batch_size):
         self.data_root = data_root
@@ -21,10 +35,7 @@ class DataLoader(object):
         ])
 
     def get_loader(self):
-        dataset = datasets.ImageFolder(
-            root=os.path.join(self.data_root, self.dataset_name),
-            transform=self.transforms
-        )
+        dataset = load_dataset(self.data_root, self.dataset_name, self.transforms)
         dataloader = torch.utils.data.DataLoader(
             dataset=dataset,
             batch_size=self.batch_size,

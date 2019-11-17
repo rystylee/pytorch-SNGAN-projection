@@ -35,7 +35,7 @@ def get_config():
     parser.add_argument('--checkpoint_dir', type=str, default='checkpoint')
     parser.add_argument('--checkpoint_interval', type=int, default=500)
     parser.add_argument('--log_dir', type=str, default='logs')
-    parser.add_argument('--log_interval', type=int, default=100)
+    parser.add_argument('--log_interval', type=int, default=20)
 
     args = parser.parse_args()
 
