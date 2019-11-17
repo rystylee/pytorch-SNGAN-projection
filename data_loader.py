@@ -11,11 +11,16 @@ def load_dataset(data_root, dataset_name, trans):
             train=True,
             transform=trans,
             download=True)
+    elif dataset_name == 'cifar100':
+        return datasets.CIFAR100(
+            root=data_root,
+            train=True,
+            transform=trans,
+            download=True)
     else:
         return datasets.ImageFolder(
             root=os.path.join(data_root, dataset_name),
-            transform=trans
-        )
+            transform=trans)
 
 
 class DataLoader(object):

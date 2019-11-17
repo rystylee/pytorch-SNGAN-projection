@@ -9,7 +9,7 @@ def get_config():
 
     # dataset
     parser.add_argument('--data_root', type=str, default='data')
-    parser.add_argument('--dataset_name', type=str, default='')
+    parser.add_argument('--dataset_name', type=str, default='cifar100')
     parser.add_argument('--img_size', type=int, default=256)
     parser.add_argument('--img_type', type=str, default='color', choices=['color', 'grayscale'])
     parser.add_argument('--batch_size', type=int, default=8)
