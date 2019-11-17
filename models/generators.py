@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.layers import ConditionalBatchNorm2d, CategoricalConditionalBatchNorm
+from models.layers import CategoricalConditionalBatchNorm
 
 
 def upsample(x, scale_factor=2):
@@ -67,7 +67,7 @@ class ResBlock(nn.Module):
 
 class ResNetGenerator(nn.Module):
     def __init__(self, ch=64, dim_z=128, bottom_width=4,
-                 activation=F.relu, n_classes=0, distribution='normal'):
+                 activation=F.relu, n_classes=0):
         super(ResNetGenerator, self).__init__()
 
         self.bottom_width = bottom_width
@@ -102,6 +102,5 @@ class ResNetGenerator(nn.Module):
         h = self.bn8(h)
         h = self.activation(h)
         h = self.conv8(h)
-        # h = F.tanh(h)
         h = torch.tanh(h)
         return h
