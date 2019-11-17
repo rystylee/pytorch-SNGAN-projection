@@ -33,8 +33,9 @@ class Trainer(object):
         # self.lr_decay_start = config.lr_decay_start
         self.start_itr = 1
 
-        self.generator = ResNetGenerator(config.gen_ch, self.dim_z, config.bottom_width, n_classes=self.n_classes).to(self.device)
-        self.discriminator = SNResNetProjectionDiscriminator(config.dis_ch, config.n_classes).to(self.device)
+        dim_c = 3 if self.config.img_type == 'color' else 1
+        self.generator = ResNetGenerator(config.gen_ch, self.dim_z, dim_c, self.config.bottom_width, n_classes=self.n_classes).to(self.device)
+        self.discriminator = SNResNetProjectionDiscriminator(config.dis_ch, dim_c, config.n_classes).to(self.device)
         print(self.generator)
         print(self.discriminator)
 

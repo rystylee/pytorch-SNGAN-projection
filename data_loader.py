@@ -5,16 +5,19 @@ import torchvision.datasets as datasets
 
 
 class DataLoader(object):
-    def __init__(self, data_root, dataset_name, img_size, batch_size):
+    def __init__(self, data_root, dataset_name, img_size, img_type, batch_size):
         self.data_root = data_root
         self.dataset_name = dataset_name
         self.img_size = img_size
         self.batch_size = batch_size
 
+        norm_mean = (0.5, 0.5, 0.5) if img_type == 'color' else (0.5, )
+        norm_std = (0.5, 0.5, 0.5) if img_type == 'color' else (0.5, )
+
         self.transforms = transforms.Compose([
             transforms.Resize((self.img_size, self.img_size)),
             transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            transforms.Normalize(norm_mean, norm_std)
         ])
 
     def get_loader(self):

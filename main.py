@@ -15,7 +15,7 @@ def main():
 
     torch.backends.cudnn.benchmark = True
 
-    dataLoader = DataLoader(config.data_root, config.dataset_name, config.img_size, config.batch_size)
+    dataLoader = DataLoader(config.data_root, config.dataset_name, config.img_size, config.img_type, config.batch_size)
     loader, n_classes = dataLoader.get_loader()
     config.n_classes = n_classes
     trainer = Trainer(loader, config)

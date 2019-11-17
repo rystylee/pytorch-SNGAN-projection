@@ -66,7 +66,7 @@ class ResBlock(nn.Module):
 
 
 class ResNetGenerator(nn.Module):
-    def __init__(self, ch=64, dim_z=128, bottom_width=4,
+    def __init__(self, ch=64, dim_z=128, dim_c=3, bottom_width=4,
                  activation=F.relu, n_classes=0):
         super(ResNetGenerator, self).__init__()
 
@@ -80,8 +80,8 @@ class ResNetGenerator(nn.Module):
         self.block5 = ResBlock(ch * 8,  ch * 4,  activation=activation, upsampling=True, n_classes=n_classes)
         self.block6 = ResBlock(ch * 4,  ch * 2,  activation=activation, upsampling=True, n_classes=n_classes)
         self.block7 = ResBlock(ch * 2,  ch,      activation=activation, upsampling=True, n_classes=n_classes)
-        self.bn8 = nn.BatchNorm2d(ch)  # or ConditionalBatchNorm2d?
-        self.conv8 = nn.Conv2d(ch, out_channels=3, kernel_size=3, stride=1, padding=1)
+        self.bn8 = nn.BatchNorm2d(ch)
+        self.conv8 = nn.Conv2d(ch, out_channels=dim_c, kernel_size=3, stride=1, padding=1)
 
         self._initialize()
 

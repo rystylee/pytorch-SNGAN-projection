@@ -91,13 +91,13 @@ class OptimizeBlock(nn.Module):
 
 
 class SNResNetProjectionDiscriminator(nn.Module):
-    def __init__(self, ch=64, n_classes=0, activation=F.relu):
+    def __init__(self, ch=64, dim_c=3, n_classes=0, activation=F.relu):
         super(SNResNetProjectionDiscriminator, self).__init__()
 
         self.activation = activation
         self.n_classes = n_classes
 
-        self.block1 = OptimizeBlock(3, ch)
+        self.block1 = OptimizeBlock(dim_c, ch)
         self.block2 = ResBlock(ch * 1,  ch * 2,  activation=activation, downsampling=True)
         self.block3 = ResBlock(ch * 2,  ch * 4,  activation=activation, downsampling=True)
         self.block4 = ResBlock(ch * 4,  ch * 8,  activation=activation, downsampling=True)

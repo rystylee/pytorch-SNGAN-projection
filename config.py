@@ -11,6 +11,7 @@ def get_config():
     parser.add_argument('--data_root', type=str, default='data')
     parser.add_argument('--dataset_name', type=str, default='')
     parser.add_argument('--img_size', type=int, default=256)
+    parser.add_argument('--img_type', type=str, default='color', choices=['color, grayscale'])
     parser.add_argument('--batch_size', type=int, default=8)
 
     # training
@@ -32,9 +33,9 @@ def get_config():
 
     # misc
     parser.add_argument('--checkpoint_dir', type=str, default='checkpoint')
-    parser.add_argument('--checkpoint_interval', type=int, default=5)
+    parser.add_argument('--checkpoint_interval', type=int, default=500)
     parser.add_argument('--log_dir', type=str, default='logs')
-    parser.add_argument('--log_interval', type=int, default=20)
+    parser.add_argument('--log_interval', type=int, default=100)
 
     args = parser.parse_args()
 
