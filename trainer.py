@@ -62,6 +62,8 @@ class Trainer(object):
                 # if n_itr >= self.lr_decay_start:
 
                 total_loss_d = 0
+                total_loss_d_real = 0
+                total_loss_d_fake = 0
                 for i in range(self.n_dis):
                     # Train G
                     if i == 0:
@@ -92,20 +94,27 @@ class Trainer(object):
                     loss_d_fake = self.criterion(dis_fake, 'dis_fake')
                     loss_d = loss_d_real + loss_d_fake
                     total_loss_d += loss_d.item()
+                    total_loss_d_real += loss_d_real.item()
+                    total_loss_d_fake += loss_d_fake.item()
                     loss_d.backward()
                     self.optim_d.step()
 
                 total_loss_g = loss_g.item()
                 total_loss_d /= float(self.n_dis)
+                total_loss_d_real /= float(self.n_dis)
+                total_loss_d_fake /= float(self.n_dis)
                 if n_itr % self.config.log_interval == 0:
-                    tqdm.write(f'iteration: {n_itr}/{self.config.max_itr}, loss_g: {total_loss_g}, loss_d: {total_loss_d}')
-                    self.writer.add_scalar('loss_g', loss_g.item(), n_itr)
-                    self.writer.add_scalar('loss_d', total_loss_d, n_itr)
+                    tqdm.write('iteration: {}/{}, loss_g: {}, loss_d: {}, loss_d_real: {}, loss_d_fake: {}'.format(
+                        n_itr, self.config.max_itr, total_loss_g, total_loss_d, total_loss_d_real, total_loss_d_fake))
+                    self.writer.add_scalar('loss/loss_g', loss_g.item(), n_itr)
+                    self.writer.add_scalar('loss/loss_d', total_loss_d, n_itr)
+                    self.writer.add_scalar('loss/loss_d_real', total_loss_d_real, n_itr)
+                    self.writer.add_scalar('loss/loss_d_fake', total_loss_d_fake, n_itr)
 
                 if n_itr % self.config.sample_interval == 0:
                     real_img_grid = torchvision.utils.make_grid(img, nrow=4, normalize=True)
-                    self.writer.add_image('real_images', real_img_grid, n_itr)
-                    self._sample_fake_imgs('fake_images', n_itr)
+                    self.writer.add_image('img/real_images', real_img_grid, n_itr)
+                    self._sample_fake_imgs('img/fake_images', n_itr)
 
                 if n_itr % self.config.checkpoint_interval == 0:
                     self._save_models(n_itr)
