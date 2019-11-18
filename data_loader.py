@@ -30,14 +30,16 @@ class DataLoader(object):
         self.img_size = img_size
         self.batch_size = batch_size
 
-        norm_mean = (0.5, 0.5, 0.5) if img_type == 'color' else (0.5, )
-        norm_std = (0.5, 0.5, 0.5) if img_type == 'color' else (0.5, )
-
-        self.transforms = transforms.Compose([
-            transforms.Resize((self.img_size, self.img_size)),
-            transforms.ToTensor(),
-            transforms.Normalize(norm_mean, norm_std)
-        ])
+        trans = list()
+        if img_type == 'grayscale':
+            trans.append(transforms.Grayscale())
+        trans.append(transforms.Resize((self.img_size, self.img_size)))
+        trans.append(transforms.ToTensor())
+        if img_type == 'grayscale':
+            trans.append(transforms.Normalize((0.5,), (0.5,)))
+        else:
+            trans.append(transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)))
+        self.transforms = transforms.Compose(trans)
 
     def get_loader(self):
         dataset = load_dataset(self.data_root, self.dataset_name, self.transforms)

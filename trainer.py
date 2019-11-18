@@ -1,5 +1,5 @@
 import os
-# import time
+import math
 from tqdm import tqdm
 
 import torch
@@ -33,9 +33,11 @@ class Trainer(object):
         # self.lr_decay_start = config.lr_decay_start
         self.start_itr = 1
 
-        dim_c = 3 if self.config.img_type == 'color' else 1
-        self.generator = ResNetGenerator(config.gen_ch, self.dim_z, dim_c, self.config.bottom_width, n_classes=self.n_classes).to(self.device)
-        self.discriminator = SNResNetProjectionDiscriminator(config.dis_ch, dim_c, config.n_classes).to(self.device)
+        self.dim_c = 3 if self.config.img_type == 'color' else 1
+        self.generator = ResNetGenerator(config.gen_ch, self.dim_z, self.dim_c, self.config.bottom_width, n_classes=self.n_classes).to(self.device)
+        self.discriminator = SNResNetProjectionDiscriminator(config.dis_ch, self.dim_c, config.n_classes).to(self.device)
+        self.generator.train()
+        self.discriminator.train()
         print(self.generator)
         print(self.discriminator)
 
@@ -45,6 +47,9 @@ class Trainer(object):
 
         if not self.config.model_state_path == '':
             self._load_models(self.config.model_state_path)
+
+        self.fixed_z = torch.randn(self.n_classes, self.dim_z).to(self.device)
+        self.fixed_y = torch.arange(0, self.n_classes, dtype=torch.long).to(self.device)
 
         self.writer = SummaryWriter(log_dir=self.config.log_dir)
 
@@ -95,9 +100,8 @@ class Trainer(object):
                 if n_itr % self.config.log_interval == 0:
                     tqdm.write(f'iteration: {n_itr}/{self.config.max_itr}, loss_g: {total_loss_g}, loss_d: {total_loss_d}')
                     real_img_grid = torchvision.utils.make_grid(img, nrow=4, normalize=True)
-                    fake_img_grid = torchvision.utils.make_grid(fake_img, nrow=4, normalize=True)
                     self.writer.add_image('real_images', real_img_grid, n_itr)
-                    self.writer.add_image('fake_images', fake_img_grid, n_itr)
+                    self._sample_fake_imgs('fake_images', n_itr)
                     self.writer.add_scalar('loss_g', loss_g.item(), n_itr)
                     self.writer.add_scalar('loss_d', total_loss_d, n_itr)
 
@@ -107,6 +111,20 @@ class Trainer(object):
                 pbar.update()
 
         self.writer.close()
+
+    def _sample_fake_imgs(self, tag, n_itr):
+        self.generator.eval()
+        with torch.no_grad():
+            imgs = []
+            for z, y in zip(self.fixed_z, self.fixed_y):
+                z = z.unsqueeze(0)
+                y = y.unsqueeze(0)
+                img = self.generator(z, y)
+                imgs.append(img[0])
+            imgs = torch.stack(imgs, dim=0)
+            img_grid = torchvision.utils.make_grid(imgs, nrow=int(math.sqrt(self.n_classes)), normalize=True)
+            self.writer.add_image(tag, img_grid, n_itr)
+        self.generator.train()
 
     def _save_models(self, n_itr):
         checkpoint_name = f'{self.config.dataset_name}-{self.config.img_size}_model_ckpt_{n_itr}.pth'
