@@ -99,11 +99,13 @@ class Trainer(object):
                 total_loss_d /= float(self.n_dis)
                 if n_itr % self.config.log_interval == 0:
                     tqdm.write(f'iteration: {n_itr}/{self.config.max_itr}, loss_g: {total_loss_g}, loss_d: {total_loss_d}')
+                    self.writer.add_scalar('loss_g', loss_g.item(), n_itr)
+                    self.writer.add_scalar('loss_d', total_loss_d, n_itr)
+
+                if n_itr % self.config.sample_interval == 0:
                     real_img_grid = torchvision.utils.make_grid(img, nrow=4, normalize=True)
                     self.writer.add_image('real_images', real_img_grid, n_itr)
                     self._sample_fake_imgs('fake_images', n_itr)
-                    self.writer.add_scalar('loss_g', loss_g.item(), n_itr)
-                    self.writer.add_scalar('loss_d', total_loss_d, n_itr)
 
                 if n_itr % self.config.checkpoint_interval == 0:
                     self._save_models(n_itr)
