@@ -7,6 +7,9 @@ import json
 def get_config():
     parser = argparse.ArgumentParser()
 
+    # mode
+    parser.add_argument('--mode', type=str, default='train', choices=['train', 'sample'])
+
     # dataset
     parser.add_argument('--data_root', type=str, default='data')
     parser.add_argument('--dataset_name', type=str, default='cifar100')
@@ -45,10 +48,10 @@ def get_config():
     args.log_dir = os.path.join(args.log_dir, config_name)
     args.checkpoint_dir = os.path.join(args.checkpoint_dir, config_name)
 
-    os.makedirs(args.checkpoint_dir, exist_ok=True)
-    os.makedirs(args.log_dir, exist_ok=True)
-
-    with open(os.path.join(args.log_dir, 'config.txt'), 'w') as f:
-        json.dump(args.__dict__, f, indent=4)
+    if args.mode == 'train':
+        os.makedirs(args.checkpoint_dir, exist_ok=True)
+        os.makedirs(args.log_dir, exist_ok=True)
+        with open(os.path.join(args.log_dir, 'config.txt'), 'w') as f:
+            json.dump(args.__dict__, f, indent=4)
 
     return args
