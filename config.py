@@ -24,7 +24,7 @@ def get_config():
     parser.add_argument('--lr', type=float, default=0.0002)
     parser.add_argument('--beta1', type=float, default=0.0)
     parser.add_argument('--beta2', type=float, default=0.9)
-    parser.add_argument('--model_state_path', type=str, default='')
+    parser.add_argument('--checkpoint_path', type=str, default='')
 
     # generator
     parser.add_argument('--dim_z', type=int, default=128)
@@ -36,7 +36,7 @@ def get_config():
 
     # misc
     parser.add_argument('--checkpoint_dir', type=str, default='checkpoint')
-    parser.add_argument('--checkpoint_interval', type=int, default=500)
+    parser.add_argument('--checkpoint_interval', type=int, default=100)
     parser.add_argument('--log_dir', type=str, default='logs')
     parser.add_argument('--log_interval', type=int, default=20)
     parser.add_argument('--sample_dir', type=str, default='samples')

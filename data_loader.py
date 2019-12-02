@@ -5,7 +5,13 @@ import torchvision.datasets as datasets
 
 
 def load_dataset(data_root, dataset_name, trans):
-    if dataset_name == 'kmnist':
+    if dataset_name == 'mnist':
+        return datasets.MNIST(
+            root=data_root,
+            train=True,
+            transform=trans,
+            download=True)
+    elif dataset_name == 'kmnist':
         return datasets.KMNIST(
             root=data_root,
             train=True,

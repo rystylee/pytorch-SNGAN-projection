@@ -45,8 +45,8 @@ class Trainer(object):
         self.optim_d = optim.Adam(self.discriminator.parameters(), config.lr, (config.beta1, config.beta2))
         self.criterion = HingeLoss()
 
-        if not self.config.model_state_path == '':
-            self._load_models(self.config.model_state_path)
+        if not self.config.checkpoint_path == '':
+            self._load_models(self.config.checkpoint_path)
 
         self.fixed_z = torch.randn(self.n_classes, self.dim_z).to(self.device)
         self.fixed_y = torch.arange(0, self.n_classes, dtype=torch.long).to(self.device)
@@ -65,13 +65,18 @@ class Trainer(object):
                 total_loss_d_real = 0
                 total_loss_d_fake = 0
                 for i in range(self.n_dis):
+                    img, label = next(self.dataloader)
+                    real_img, real_label = img.to(self.device), label.to(self.device)
+
+                    batch_size = len(real_img)
+
                     # ------------------------------------------------
                     # Train G
                     # ------------------------------------------------
                     if i == 0:
                         self.optim_g.zero_grad()
-                        z = torch.randn(self.batch_size, self.dim_z).to(self.device)
-                        pseudo_y = torch.randint(0, self.n_classes, (self.batch_size, ), dtype=torch.long).to(self.device)
+                        z = torch.randn(batch_size, self.dim_z).to(self.device)
+                        pseudo_y = torch.randint(0, self.n_classes, (batch_size, ), dtype=torch.long).to(self.device)
                         fake_img = self.generator(z, pseudo_y)
                         dis_fake = self.discriminator(fake_img, pseudo_y)
 
@@ -83,11 +88,6 @@ class Trainer(object):
                     # Train D
                     # ------------------------------------------------
                     self.optim_d.zero_grad()
-                    img, label = next(self.dataloader)
-                    real_img = img.to(self.device)
-                    real_label = label.to(self.device)
-
-                    batch_size = len(real_img)
                     z = torch.randn(batch_size, self.dim_z).to(self.device)
                     pseudo_y = torch.randint(0, self.n_classes, (batch_size, ), dtype=torch.long).to(self.device)
                     with torch.no_grad():
@@ -116,12 +116,13 @@ class Trainer(object):
                     self.writer.add_scalar('loss/loss_d_fake', total_loss_d_fake, n_itr)
 
                 if n_itr % self.config.sample_interval == 0:
-                    self._sample_fake_imgs(n_itr)
+                    # self._sample_fake_imgs(n_itr)
+                    img_path = os.path.join(self.config.sample_dir, f'fake_{n_itr}.jpg')
+                    torchvision.utils.save_image(fake_img.detach(), img_path, nrow=4, normalize=True, range=(-1.0, 1.0))
 
                 if n_itr % (self.config.sample_interval * 2) == 0:
-                    img_grid = torchvision.utils.make_grid(img, nrow=4, normalize=True, range=(-1.0, 1.0))
                     img_path = os.path.join(self.config.sample_dir, f'real_{n_itr}.jpg')
-                    torchvision.utils.save_image(img_grid, img_path)
+                    torchvision.utils.save_image(img, img_path, nrow=4, normalize=True, range=(-1.0, 1.0))
 
                 if n_itr % self.config.checkpoint_interval == 0:
                     self._save_models(n_itr)
@@ -134,9 +135,8 @@ class Trainer(object):
         self.generator.eval()
         with torch.no_grad():
             img = self.generator(self.fixed_z, self.fixed_y)
-            img_grid = torchvision.utils.make_grid(img.detach(), nrow=int(math.sqrt(self.n_classes)), normalize=True, range=(-1.0, 1.0))
             img_path = os.path.join(self.config.sample_dir, f'fake_{n_itr}.jpg')
-            torchvision.utils.save_image(img_grid, img_path)
+            torchvision.utils.save_image(img.detach(), img_path, nrow=int(math.sqrt(self.n_classes)), normalize=True, range=(-1.0, 1.0))
         self.generator.train()
 
     def _save_models(self, n_itr):
@@ -149,7 +149,7 @@ class Trainer(object):
             'discriminator': self.discriminator.state_dict(),
             'optim_d': self.optim_d.state_dict(),
         }, checkpoint_path)
-        tqdm.write(f'Saved models state_dict: n_itr_{n_itr}')
+        tqdm.write(f'Saved checkpoint: n_itr_{n_itr}')
 
     def _load_models(self, model_state_path):
         checkpoint = torch.load(model_state_path)
