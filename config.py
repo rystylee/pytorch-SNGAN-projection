@@ -37,21 +37,26 @@ def get_config():
     # misc
     parser.add_argument('--checkpoint_dir', type=str, default='checkpoint')
     parser.add_argument('--checkpoint_interval', type=int, default=500)
-    parser.add_argument('--sample_interval', type=int, default=100)
     parser.add_argument('--log_dir', type=str, default='logs')
     parser.add_argument('--log_interval', type=int, default=20)
+    parser.add_argument('--sample_dir', type=str, default='samples')
+    parser.add_argument('--sample_interval', type=int, default=100)
 
     args = parser.parse_args()
 
     time_str = time.strftime("%Y%m%d-%H%M%S")
-    config_name = f'{time_str}-{args.dataset_name}-{args.img_size}'
-    args.log_dir = os.path.join(args.log_dir, config_name)
-    args.checkpoint_dir = os.path.join(args.checkpoint_dir, config_name)
+    config_name = f'{time_str}-{args.dataset_name}-s{args.img_size}-b{args.batch_size}'
+
+    runs_path = os.path.join('runs', config_name)
+    args.log_dir = os.path.join(runs_path, args.log_dir)
+    args.checkpoint_dir = os.path.join(runs_path, args.checkpoint_dir)
+    args.sample_dir = os.path.join(runs_path, args.sample_dir)
 
     if args.mode == 'train':
         os.makedirs(args.checkpoint_dir, exist_ok=True)
         os.makedirs(args.log_dir, exist_ok=True)
-        with open(os.path.join(args.log_dir, 'config.txt'), 'w') as f:
+        os.makedirs(args.sample_dir, exist_ok=True)
+        with open(os.path.join(runs_path, 'config.txt'), 'w') as f:
             json.dump(args.__dict__, f, indent=4)
 
     return args

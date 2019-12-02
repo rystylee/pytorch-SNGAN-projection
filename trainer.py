@@ -65,7 +65,9 @@ class Trainer(object):
                 total_loss_d_real = 0
                 total_loss_d_fake = 0
                 for i in range(self.n_dis):
+                    # ------------------------------------------------
                     # Train G
+                    # ------------------------------------------------
                     if i == 0:
                         self.optim_g.zero_grad()
                         z = torch.randn(self.batch_size, self.dim_z).to(self.device)
@@ -77,7 +79,9 @@ class Trainer(object):
                         loss_g.backward()
                         self.optim_g.step()
 
+                    # ------------------------------------------------
                     # Train D
+                    # ------------------------------------------------
                     self.optim_d.zero_grad()
                     img, label = next(self.dataloader)
                     real_img = img.to(self.device)
@@ -112,9 +116,12 @@ class Trainer(object):
                     self.writer.add_scalar('loss/loss_d_fake', total_loss_d_fake, n_itr)
 
                 if n_itr % self.config.sample_interval == 0:
-                    real_img_grid = torchvision.utils.make_grid(img, nrow=4, normalize=True)
-                    self.writer.add_image('img/real_images', real_img_grid, n_itr)
-                    self._sample_fake_imgs('img/fake_images', n_itr)
+                    self._sample_fake_imgs(n_itr)
+
+                if n_itr % (self.config.sample_interval * 2) == 0:
+                    img_grid = torchvision.utils.make_grid(img, nrow=4, normalize=True, range=(-1.0, 1.0))
+                    img_path = os.path.join(self.config.sample_dir, f'real_{n_itr}.jpg')
+                    torchvision.utils.save_image(img_grid, img_path)
 
                 if n_itr % self.config.checkpoint_interval == 0:
                     self._save_models(n_itr)
@@ -123,18 +130,13 @@ class Trainer(object):
 
         self.writer.close()
 
-    def _sample_fake_imgs(self, tag, n_itr):
+    def _sample_fake_imgs(self, n_itr):
         self.generator.eval()
         with torch.no_grad():
-            imgs = []
-            for z, y in zip(self.fixed_z, self.fixed_y):
-                z = z.unsqueeze(0)
-                y = y.unsqueeze(0)
-                img = self.generator(z, y)
-                imgs.append(img[0])
-            imgs = torch.stack(imgs, dim=0)
-            img_grid = torchvision.utils.make_grid(imgs, nrow=int(math.sqrt(self.n_classes)), normalize=True)
-            self.writer.add_image(tag, img_grid, n_itr)
+            img = self.generator(self.fixed_z, self.fixed_y)
+            img_grid = torchvision.utils.make_grid(img.detach(), nrow=int(math.sqrt(self.n_classes)), normalize=True, range=(-1.0, 1.0))
+            img_path = os.path.join(self.config.sample_dir, f'fake_{n_itr}.jpg')
+            torchvision.utils.save_image(img_grid, img_path)
         self.generator.train()
 
     def _save_models(self, n_itr):

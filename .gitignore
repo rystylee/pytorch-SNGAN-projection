@@ -8,8 +8,7 @@ VENV/
 
 # 
 data/*
-logs/*
-checkpoint/*
+runs/*
 
 # Trained model
 *.pth
