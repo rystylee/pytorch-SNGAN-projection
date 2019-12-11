@@ -89,7 +89,7 @@ class ResNetGenerator(nn.Module):
         nn.init.xavier_uniform_(self.l1.weight.data)
         nn.init.xavier_uniform_(self.conv8.weight.data)
 
-    def forward(self, x, y):
+    def forward(self, x, y=None):
         h = x
         h = self.l1(h)
         h = h.view(x.size(0), -1, self.bottom_width, self.bottom_width)

@@ -11,6 +11,9 @@ from models.generators import ResNetGenerator
 from models.discriminators import SNResNetProjectionDiscriminator
 from losses import HingeLoss
 
+from PIL import Image
+Image.MAX_IMAGE_PIXELS = 1000000000
+
 
 def endless_dataloader(dataloader):
     while True:
@@ -29,15 +32,16 @@ class Trainer(object):
         self.batch_size = config.batch_size
         self.n_dis = config.n_dis
         self.dim_z = config.dim_z
-        self.n_classes = config.n_classes
+        self.n_classes = config.n_classes if config.n_classes > 1 else 0
+        self.conditional = True if self.n_classes > 0 else False
         # self.lr_decay_start = config.lr_decay_start
         self.start_itr = 1
 
         self.dim_c = 3 if self.config.img_type == 'color' else 1
         self.generator = ResNetGenerator(config.gen_ch, self.dim_z, self.dim_c, self.config.bottom_width, n_classes=self.n_classes).to(self.device)
-        self.discriminator = SNResNetProjectionDiscriminator(config.dis_ch, self.dim_c, config.n_classes).to(self.device)
-        self.generator.train()
-        self.discriminator.train()
+        self.discriminator = SNResNetProjectionDiscriminator(config.dis_ch, self.dim_c, n_classes=self.n_classes).to(self.device)
+        # self.generator.train()
+        # self.discriminator.train()
         print(self.generator)
         print(self.discriminator)
 
@@ -48,8 +52,8 @@ class Trainer(object):
         if not self.config.checkpoint_path == '':
             self._load_models(self.config.checkpoint_path)
 
-        self.fixed_z = torch.randn(self.n_classes, self.dim_z).to(self.device)
-        self.fixed_y = torch.arange(0, self.n_classes, dtype=torch.long).to(self.device)
+        self.fixed_z = torch.randn(self.n_classes, self.dim_z).to(self.device) if self.conditional else torch.randn(self.batch_size, self.dim_z).to(self.device)
+        self.fixed_y = torch.arange(0, self.n_classes, dtype=torch.long).to(self.device) if self.conditional else None
 
         self.writer = SummaryWriter(log_dir=self.config.log_dir)
 
@@ -61,12 +65,14 @@ class Trainer(object):
 
                 # if n_itr >= self.lr_decay_start:
 
+                total_loss_g = 0
                 total_loss_d = 0
                 total_loss_d_real = 0
                 total_loss_d_fake = 0
                 for i in range(self.n_dis):
                     img, label = next(self.dataloader)
-                    real_img, real_label = img.to(self.device), label.to(self.device)
+                    real_img = img.to(self.device)
+                    real_label = label.to(self.device) if self.conditional else None
 
                     batch_size = len(real_img)
 
@@ -76,20 +82,23 @@ class Trainer(object):
                     if i == 0:
                         self.optim_g.zero_grad()
                         z = torch.randn(batch_size, self.dim_z).to(self.device)
-                        pseudo_y = torch.randint(0, self.n_classes, (batch_size, ), dtype=torch.long).to(self.device)
+                        pseudo_y = torch.randint(0, self.n_classes, (batch_size, ), dtype=torch.long).to(self.device) if self.conditional else None
                         fake_img = self.generator(z, pseudo_y)
                         dis_fake = self.discriminator(fake_img, pseudo_y)
 
                         loss_g = self.criterion(dis_fake, 'gen')
                         loss_g.backward()
+                        total_loss_g += loss_g.item()
                         self.optim_g.step()
+
+                        del z, pseudo_y, fake_img, dis_fake, loss_g
 
                     # ------------------------------------------------
                     # Train D
                     # ------------------------------------------------
                     self.optim_d.zero_grad()
                     z = torch.randn(batch_size, self.dim_z).to(self.device)
-                    pseudo_y = torch.randint(0, self.n_classes, (batch_size, ), dtype=torch.long).to(self.device)
+                    pseudo_y = torch.randint(0, self.n_classes, (batch_size, ), dtype=torch.long).to(self.device) if self.conditional else None
                     with torch.no_grad():
                         fake_img = self.generator(z, pseudo_y)
                     dis_real = self.discriminator(real_img, real_label)
@@ -97,28 +106,30 @@ class Trainer(object):
                     loss_d_real = self.criterion(dis_real, 'dis_real')
                     loss_d_fake = self.criterion(dis_fake, 'dis_fake')
                     loss_d = loss_d_real + loss_d_fake
-                    total_loss_d += loss_d.item()
                     total_loss_d_real += loss_d_real.item()
                     total_loss_d_fake += loss_d_fake.item()
+                    total_loss_d += loss_d.item()
                     loss_d.backward()
                     self.optim_d.step()
 
-                total_loss_g = loss_g.item()
+                    del z, pseudo_y, fake_img, dis_real, dis_fake, loss_d_real, loss_d_fake, loss_d
+
+                total_loss_g /= 1.0
                 total_loss_d /= float(self.n_dis)
                 total_loss_d_real /= float(self.n_dis)
                 total_loss_d_fake /= float(self.n_dis)
                 if n_itr % self.config.log_interval == 0:
                     tqdm.write('iteration: {}/{}, loss_g: {}, loss_d: {}, loss_d_real: {}, loss_d_fake: {}'.format(
                         n_itr, self.config.max_itr, total_loss_g, total_loss_d, total_loss_d_real, total_loss_d_fake))
-                    self.writer.add_scalar('loss/loss_g', loss_g.item(), n_itr)
+                    self.writer.add_scalar('loss/loss_g', total_loss_g, n_itr)
                     self.writer.add_scalar('loss/loss_d', total_loss_d, n_itr)
                     self.writer.add_scalar('loss/loss_d_real', total_loss_d_real, n_itr)
                     self.writer.add_scalar('loss/loss_d_fake', total_loss_d_fake, n_itr)
 
                 if n_itr % self.config.sample_interval == 0:
-                    # self._sample_fake_imgs(n_itr)
-                    img_path = os.path.join(self.config.sample_dir, f'fake_{n_itr}.jpg')
-                    torchvision.utils.save_image(fake_img.detach(), img_path, nrow=4, normalize=True, range=(-1.0, 1.0))
+                    self._sample_fake_imgs(n_itr)
+                    # img_path = os.path.join(self.config.sample_dir, f'fake_{n_itr}.jpg')
+                    # torchvision.utils.save_image(fake_img.detach(), img_path, nrow=4, normalize=True, range=(-1.0, 1.0))
 
                 if n_itr % (self.config.sample_interval * 2) == 0:
                     img_path = os.path.join(self.config.sample_dir, f'real_{n_itr}.jpg')
@@ -136,7 +147,10 @@ class Trainer(object):
         with torch.no_grad():
             img = self.generator(self.fixed_z, self.fixed_y)
             img_path = os.path.join(self.config.sample_dir, f'fake_{n_itr}.jpg')
-            torchvision.utils.save_image(img.detach(), img_path, nrow=int(math.sqrt(self.n_classes)), normalize=True, range=(-1.0, 1.0))
+            nrow = int(math.sqrt(self.n_classes)) if self.conditional else 4
+            torchvision.utils.save_image(img.detach(), img_path, nrow=nrow, normalize=True, range=(-1.0, 1.0))
+            # torchvision.utils.save_image(img.detach(), img_path, nrow=int(math.sqrt(self.n_classes)), normalize=True, range=(-1.0, 1.0))
+            # torchvision.utils.save_image(img.detach(), img_path, 4, normalize=True, range=(-1.0, 1.0))
         self.generator.train()
 
     def _save_models(self, n_itr):
