@@ -13,6 +13,8 @@ from losses import HingeLoss
 
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = 1000000000
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 def endless_dataloader(dataloader):
