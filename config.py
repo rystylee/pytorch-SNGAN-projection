@@ -16,6 +16,7 @@ def get_config():
     parser.add_argument('--img_size', type=int, default=256)
     parser.add_argument('--img_type', type=str, default='color', choices=['color', 'grayscale'])
     parser.add_argument('--batch_size', type=int, default=8)
+    parser.add_argument('--no_label', action='store_true')
 
     # training
     parser.add_argument('--max_itr', type=int, default=450000)

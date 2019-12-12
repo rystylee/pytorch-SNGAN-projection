@@ -12,8 +12,8 @@ from models.discriminators import SNResNetProjectionDiscriminator
 from losses import HingeLoss
 
 from PIL import Image
-Image.MAX_IMAGE_PIXELS = 1000000000
 from PIL import ImageFile
+Image.MAX_IMAGE_PIXELS = 1000000000
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
@@ -35,7 +35,7 @@ class Trainer(object):
         self.n_dis = config.n_dis
         self.dim_z = config.dim_z
         self.n_classes = config.n_classes if config.n_classes > 1 else 0
-        self.conditional = True if self.n_classes > 0 else False
+        self.conditional = True if self.n_classes > 0 and not config.no_label else False
         # self.lr_decay_start = config.lr_decay_start
         self.start_itr = 1
 
