@@ -40,10 +40,9 @@ class Trainer(object):
         self.start_itr = 1
 
         self.dim_c = 3 if self.config.img_type == 'color' else 1
-        self.generator = ResNetGenerator(config.gen_ch, self.dim_z, self.dim_c, self.config.bottom_width, n_classes=self.n_classes).to(self.device)
-        self.discriminator = SNResNetProjectionDiscriminator(config.dis_ch, self.dim_c, n_classes=self.n_classes).to(self.device)
-        # self.generator.train()
-        # self.discriminator.train()
+        n_classes = self.n_classes if self.conditional else 0
+        self.generator = ResNetGenerator(config.gen_ch, self.dim_z, self.dim_c, self.config.bottom_width, n_classes=n_classes).to(self.device)
+        self.discriminator = SNResNetProjectionDiscriminator(config.dis_ch, self.dim_c, n_classes=n_classes).to(self.device)
         print(self.generator)
         print(self.discriminator)
 
